@@ -1,4 +1,5 @@
 // Definitions.
+import { Color } from "../../../color";
 import { Point, View as ViewDefinition, dip } from ".";
 import { ViewBase } from "../view-base";
 
@@ -14,7 +15,7 @@ import {
     visibilityProperty, opacityProperty,
     rotateProperty, scaleXProperty, scaleYProperty,
     translateXProperty, translateYProperty, zIndexProperty,
-    backgroundInternalProperty, clipPathProperty
+    backgroundInternalProperty, clipPathProperty, elevationProperty
 } from "../../styling/style-properties";
 import { profile } from "../../../profiling";
 
@@ -525,6 +526,41 @@ export class View extends ViewCommon {
         if (!updateSuspended) {
             CATransaction.commit();
         }
+    }
+
+    [elevationProperty.getDefault](): number {
+        return undefined;
+    }
+
+    [elevationProperty.setNative](value: number) {
+        // TODO figure out how to do this without a silly timeout
+        setTimeout(() => {
+            let nativeView = this.nativeViewProtected;
+
+            nativeView.layer.masksToBounds = false;
+
+            // TODO find the best color, matching what Android does
+            nativeView.layer.shadowColor = new Color("#666").ios.CGColor;
+
+            nativeView.layer.shadowOffset = CGSizeMake(0.54 * value - 0.14, 0.54 * value - 0.14);
+
+            // TODO based on elevation (range 0.0 (transparent) to 1.0 (opaque), default 0.0 (rendering the shadow invisible))
+            nativeView.layer.shadowOpacity = 0.98;
+
+            // TODO based on elevation (default 3.0)
+            nativeView.layer.shadowRadius = 1;
+
+            // TODO there's a trade-off between performance and memory usage - decide which one we'll use
+            nativeView.layer.shouldRasterize = false;
+            nativeView.layer.rasterizationScale = 2; // screen.mainScreen.scale;
+            let shadowPath = null;
+            let useShadowPath = true;
+            if (useShadowPath) {
+                // shadowPath = UIBezierPath.bezierPathWithRoundedRectCornerRadius(nativeView.bounds, nativeView.layer.shadowRadius).CGPath;
+                shadowPath = UIBezierPath.bezierPathWithRect(nativeView.bounds).CGPath;
+            }
+            // nativeView.layer.shadowPath = shadowPath;
+        });
     }
 
     [rotateProperty.getDefault](): number {

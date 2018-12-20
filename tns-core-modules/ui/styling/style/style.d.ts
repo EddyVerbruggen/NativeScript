@@ -12,6 +12,7 @@ import {
     Order, FlexGrow, FlexShrink, FlexWrapBefore, AlignSelf
 } from "../../layouts/flexbox-layout";
 import { LinearGradient } from "../gradient";
+import { BoxShadow } from "../../../css/parser"; // TODO May need to move (like LinearGradient)
 
 export interface Thickness {
     left: number;
@@ -92,6 +93,7 @@ export class Style extends Observable {
     public fontWeight: FontWeight;
     public font: string;
 
+    public elevation: number;
     public zIndex: number;
     public opacity: number;
     public visibility: Visibility;
@@ -127,13 +129,13 @@ export class Style extends Observable {
     public selectedTabTextColor: Color;
     public androidSelectedTabHighlightColor: Color;
 
-    // ListView-specific props 
+    // ListView-specific props
     public separatorColor: Color;
 
     //SegmentedBar-specific props
     public selectedBackgroundColor: Color;
 
-    // Page-specific props 
+    // Page-specific props
     public statusBarStyle: "light" | "dark";
     public androidStatusBarBackground: Color;
 

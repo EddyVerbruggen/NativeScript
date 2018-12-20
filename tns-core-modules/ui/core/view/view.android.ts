@@ -15,7 +15,7 @@ import {
     minWidthProperty, minHeightProperty, widthProperty, heightProperty,
     marginLeftProperty, marginTopProperty, marginRightProperty, marginBottomProperty,
     rotateProperty, scaleXProperty, scaleYProperty, translateXProperty, translateYProperty,
-    zIndexProperty, backgroundInternalProperty
+    zIndexProperty, backgroundInternalProperty, elevationProperty
 } from "../../styling/style-properties";
 
 import { Background, ad as androidBackground } from "../../styling/background";
@@ -298,7 +298,7 @@ export class View extends ViewCommon {
             let view: View = this;
             let frameOrTabViewItemFound = false;
             while (view) {
-                // when interacting with nested fragments instead of using getSupportFragmentManager 
+                // when interacting with nested fragments instead of using getSupportFragmentManager
                 // we must always use getChildFragmentManager instead;
                 // we have three sources of fragments -- Frame fragments, TabViewItem fragments, and
                 // modal dialog fragments
@@ -701,6 +701,16 @@ export class View extends ViewCommon {
     }
     [opacityProperty.setNative](value: number) {
         this.nativeViewProtected.setAlpha(float(value));
+    }
+
+    [elevationProperty.getDefault](): number {
+        console.log("elevationProperty.getDefault");
+        return undefined;
+    }
+
+    [elevationProperty.setNative](value: number) {
+        console.log("elevationProperty.setNative, value: " + value);
+        // TODO
     }
 
     [horizontalAlignmentProperty.getDefault](): HorizontalAlignment {
