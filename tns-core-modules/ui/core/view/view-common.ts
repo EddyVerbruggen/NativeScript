@@ -5,10 +5,9 @@ import {
 } from ".";
 
 import {
-    ViewBase, Property, booleanConverter, EventData, layout,
+    ViewBase, Property, booleanConverter, eachDescendant, EventData, layout,
     getEventOrGestureName, traceEnabled, traceWrite, traceCategories,
-    InheritedProperty,
-    ShowModalOptions
+    InheritedProperty, ShowModalOptions
 } from "../view-base";
 
 import { HorizontalAlignment, VerticalAlignment, Visibility, Length, PercentLength } from "../../styling/style-properties";
@@ -24,6 +23,7 @@ import {
 import { createViewFromEntry } from "../../builder";
 import { StyleScope } from "../../styling/style-scope";
 import { LinearGradient } from "../../styling/linear-gradient";
+import { BackgroundRepeat } from "../../styling/style-properties";
 
 export * from "../../styling/style-properties";
 export * from "../view-base";
@@ -35,6 +35,12 @@ function ensureAnimationModule() {
     if (!animationModule) {
         animationModule = require("ui/animation");
     }
+}
+
+export enum ModuleType {
+    markup = "markup",
+    script = "script",
+    style = "style"
 }
 
 export function CSSType(type: string): ClassDecorator {
@@ -136,6 +142,69 @@ export abstract class ViewCommon extends ViewBase implements ViewDefinition {
         }
     }
 
+    public _onLivesync(context?: ModuleContext): boolean {
+        if (traceEnabled()) {
+            traceWrite(`${this}._onLivesync(${JSON.stringify(context)})`, traceCategories.Livesync);
+        }
+
+        _rootModalViews.forEach(v => v.closeModal());
+        _rootModalViews.length = 0;
+
+        if (context && context.type && context.path) {
+            // Handle local styles
+            if (context.type === ModuleType.style) {
+                return this.changeLocalStyles(context.path);
+            }
+            // Handle module markup and script changes
+            else {
+                return this.changeModule(context);
+            }
+        }
+
+        return false;
+    }
+
+    private changeLocalStyles(contextPath: string): boolean {
+        if (!this.changeStyles(this, contextPath)) {
+            eachDescendant(this, (child: ViewBase) => {
+                this.changeStyles(child, contextPath);
+                return true;
+            });
+        }
+
+        // Do not reset activity/window content for local styles changes
+        return true;
+    }
+
+    private changeStyles(view: ViewBase, contextPath: string): boolean {
+        if (traceEnabled()) {
+            traceWrite(`${view}.${view._moduleName}`, traceCategories.Livesync);
+        }
+
+        if (view._moduleName && contextPath.includes(view._moduleName)) {
+            (<this>view).changeCssFile(contextPath);
+            return true;
+        }
+        return false;
+    }
+
+    private changeModule(context: ModuleContext): boolean {
+        eachDescendant(this, (child: ViewBase) => {
+            if (traceEnabled()) {
+                traceWrite(`${child}.${child._moduleName}`, traceCategories.Livesync);
+            }
+
+            // Handle changes in module's Page
+            if (child._moduleName && context.path.includes(child._moduleName) && child.page) {
+                child.page._onLivesync(context);
+            }
+            return true;
+        });
+
+        // Do not reset activity/window content for module changes
+        return true;
+    }
+
     _setupAsRootView(context: any): void {
         super._setupAsRootView(context);
         if (!this._styleScope) {
@@ -210,12 +279,6 @@ export abstract class ViewCommon extends ViewBase implements ViewDefinition {
         }
     }
 
-    _onLivesync(): boolean {
-        _rootModalViews.forEach(v => v.closeModal());
-        _rootModalViews.length = 0;
-        return false;
-    }
-
     public onBackPressed(): boolean {
         return false;
     }
@@ -233,7 +296,14 @@ export abstract class ViewCommon extends ViewBase implements ViewDefinition {
             if (args.length === 2) {
                 options = <ShowModalOptions>args[1];
             } else {
-                // TODO: Add deprecation warning
+                if (args[0] instanceof ViewCommon) {
+                    console.log("showModal(view: ViewBase, context: any, closeCallback: Function, fullscreen?: boolean, animated?: boolean, stretched?: boolean) " +
+                        "is deprecated. Use showModal(view: ViewBase, modalOptions: ShowModalOptions) instead.");
+                } else {
+                    console.log("showModal(moduleName: string, context: any, closeCallback: Function, fullscreen?: boolean, animated?: boolean, stretched?: boolean) " +
+                        "is deprecated. Use showModal(moduleName: string, modalOptions: ShowModalOptions) instead.");
+                }
+
                 options = {
                     context: args[1],
                     closeCallback: args[2],
@@ -487,6 +557,27 @@ export abstract class ViewCommon extends ViewBase implements ViewDefinition {
     }
     set backgroundImage(value: string | LinearGradient) {
         this.style.backgroundImage = value;
+    }
+
+    get backgroundSize(): string {
+        return this.style.backgroundSize;
+    }
+    set backgroundSize(value: string) {
+        this.style.backgroundSize = value;
+    }
+
+    get backgroundPosition(): string {
+        return this.style.backgroundPosition;
+    }
+    set backgroundPosition(value: string) {
+        this.style.backgroundPosition = value;
+    }
+
+    get backgroundRepeat(): BackgroundRepeat {
+        return this.style.backgroundRepeat;
+    }
+    set backgroundRepeat(value: BackgroundRepeat) {
+        this.style.backgroundRepeat = value;
     }
 
     get minWidth(): Length {

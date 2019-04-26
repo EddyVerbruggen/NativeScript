@@ -57,13 +57,19 @@ function initializeTouchListener(): void {
 
     @Interfaces([android.view.View.OnTouchListener])
     class TouchListenerImpl extends java.lang.Object implements android.view.View.OnTouchListener {
-        constructor(private owner: View) {
+        private owner: WeakRef<View>;
+        constructor(owner: View) {
             super();
+            this.owner = new WeakRef(owner);
+
             return global.__native(this);
         }
 
         onTouch(view: android.view.View, event: android.view.MotionEvent): boolean {
-            const owner = this.owner;
+            const owner = this.owner.get();
+            if (!owner) {
+                return;
+            }
             owner.handleGestureTouch(event);
 
             let nativeView = owner.nativeViewProtected;
@@ -211,7 +217,7 @@ function initializeDialogFragment() {
             const owner = this.owner;
 
             if (owner) {
-                // Android calls onDestroy before onDismiss. 
+                // Android calls onDestroy before onDismiss.
                 // Make sure we unload first and then call _tearDownUI.
                 if (owner.isLoaded) {
                     owner.callUnloaded();

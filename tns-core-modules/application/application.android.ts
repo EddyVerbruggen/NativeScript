@@ -1,6 +1,6 @@
 ﻿import {
     AndroidActivityBundleEventData, AndroidActivityEventData, ApplicationEventData, OrientationChangedEventData,
-    AndroidApplication as AndroidApplicationDefinition,
+    AndroidApplication as AndroidApplicationDefinition, AndroidActivityNewIntentEventData,
     AndroidActivityResultEventData, AndroidActivityBackPressedEventData, AndroidActivityRequestPermissionsEventData
 } from ".";
 
@@ -25,6 +25,7 @@ const ActivityStopped = "activityStopped";
 const SaveActivityState = "saveActivityState";
 const ActivityResult = "activityResult";
 const ActivityBackPressed = "activityBackPressed";
+const ActivityNewIntent = "activityNewIntent";
 const ActivityRequestPermissions = "activityRequestPermissions";
 
 export class AndroidApplication extends Observable implements AndroidApplicationDefinition {
@@ -37,6 +38,7 @@ export class AndroidApplication extends Observable implements AndroidApplication
     public static saveActivityStateEvent = SaveActivityState;
     public static activityResultEvent = ActivityResult;
     public static activityBackPressedEvent = ActivityBackPressed;
+    public static activityNewIntentEvent = ActivityNewIntent;
     public static activityRequestPermissionsEvent = ActivityRequestPermissions;
 
     public paused: boolean;
@@ -49,6 +51,7 @@ export class AndroidApplication extends Observable implements AndroidApplication
     private callbacks: any = {};
 
     public get currentContext(): android.content.Context {
+        console.log("application.currentContext is deprecated; use startActivity, foregroundActivity, or context instead");
         return this.foregroundActivity;
     }
 
@@ -118,6 +121,7 @@ export interface AndroidApplication {
     on(event: "saveActivityState", callback: (args: AndroidActivityBundleEventData) => void, thisArg?: any);
     on(event: "activityResult", callback: (args: AndroidActivityResultEventData) => void, thisArg?: any);
     on(event: "activityBackPressed", callback: (args: AndroidActivityBackPressedEventData) => void, thisArg?: any);
+    on(event: "activityNewIntent", callback: (args: AndroidActivityNewIntentEventData) => void, thisArg?: any);
     on(event: "activityRequestPermissions", callback: (args: AndroidActivityRequestPermissionsEventData) => void, thisArg?: any);
 }
 
@@ -130,7 +134,8 @@ let mainEntry: NavigationEntry;
 let started = false;
 // NOTE: for backwards compatibility. Remove for 4.0.0.
 const createRootFrame = { value: true };
-export function start(entry?: NavigationEntry | string) {
+
+function _start(entry?: NavigationEntry | string) {
     if (started) {
         throw new Error("Application is already started.");
     }
@@ -143,13 +148,18 @@ export function start(entry?: NavigationEntry | string) {
     }
 }
 
+export function start(entry?: NavigationEntry | string) {
+    console.log("application.start() is deprecated; use application.run() instead");
+    _start(entry);
+}
+
 export function shouldCreateRootFrame(): boolean {
     return createRootFrame.value;
 }
 
 export function run(entry?: NavigationEntry | string) {
     createRootFrame.value = false;
-    start(entry);
+    _start(entry);
 }
 
 const CALLBACKS = "_callbacks";
@@ -163,6 +173,9 @@ export function _resetRootView(entry?: NavigationEntry | string) {
     createRootFrame.value = false;
     mainEntry = typeof entry === "string" ? { moduleName: entry } : entry;
     const callbacks: AndroidActivityCallbacks = activity[CALLBACKS];
+    if (!callbacks) {
+        throw new Error("Cannot find android activity callbacks.");
+    }
     callbacks.resetActivityContent(activity);
 }
 
