@@ -12,7 +12,6 @@ import {
     Order, FlexGrow, FlexShrink, FlexWrapBefore, AlignSelf
 } from "../../layouts/flexbox-layout";
 import { LinearGradient } from "../gradient";
-import { BoxShadow } from "../../../css/parser"; // TODO May need to move (like LinearGradient)
 
 export interface Thickness {
     left: number;
